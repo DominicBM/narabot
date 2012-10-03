@@ -1,11 +1,12 @@
 #!/usr/bin/python
 # -*- coding: utf-8  -*-
 
+import cookielib
 import os
 import re
 import shutil
 import tempfile
-import urllib
+import urllib2
 
 from bs4 import BeautifulSoup
 import Image
@@ -82,16 +83,27 @@ class Item(object):
                         'other versions': ""}
             metadata['arc'] = self.arcid
             
-            html = urllib.urlopen('http://arcweb.archives.gov/arc/action/'
-                                  'ExternalIdSearch?id={0}'
-                                  .format(self.arcid)).read()
-            soup1 = BeautifulSoup(html)
-
-            metadata['title'] = soup1.find('strong', 'sFC').children.next()
-            metadata['record_group'] = re.sub("Item from: ", "",
-                                              soup1.find('span', 'LOD').text)
+            # HERE BE DRAGONS
+            jar = cookielib.CookieJar()
+            opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(jar))
             
-            for field_label in soup1.findAll("th"):
+            # TODO: check for timeouts!
+            main_url = 'http://arcweb.archives.gov/arc/action/' + \
+                       'ExternalIdSearch?id={0}'.format(self.arcid)
+            main_html = opener.open(main_url).read()
+            main_soup = BeautifulSoup(main_html)
+
+            metadata['title'] = main_soup.find('strong', 'sFC').children.next()
+            metadata['record_group'] = \
+                re.sub("Item from: ", "",
+                       main_soup.find('span', 'LOD').text)
+            
+            metadata['local_identifier'] = \
+                re.match(".*/ Local Identifier (.+)",
+                         main_soup.find('strong',
+                                        'arcID').text).groups()[0]
+            
+            for field_label in main_soup.findAll("th"):
                 name = re.sub(":$", "", field_label.text)
                 value = field_label.next_sibling.text
                 if name == "Creator(s)":
@@ -109,11 +121,19 @@ class Item(object):
                 if name == "Variant Control Number(s)":
                     # TODO: test multiple numbers?
                     metadata['variant_control_numbers'] = value
-
-            html = urllib.urlopen('http://arcweb.archives.gov/arc/action/'
-                                  'ExternalIdSearch?id={0}'
-                                  .format(self.arcid)).read()
-            soup1 = BeautifulSoup(html)
+            
+            scope_url_match = \
+                re.findall('"(/arc/action/ShowFullRecordLinked\\?'
+                           'tab=showFullDescriptionTabs/'
+                           'scope.*)"', main_html)
+            if scope_url_match:
+                # TODO: check for timeouts!
+                scope_url = 'http://arcweb.archives.gov' + scope_url_match[0]
+                opener.addheaders = [('Referer', main_url)]
+                scope_html = opener.open(scope_url)
+                scope_soup = BeautifulSoup(scope_html)
+                metadata['scope_and_content'] = \
+                    scope_soup.find('div', 'genPad').text.strip()
             
             
             # TODO
