@@ -23,6 +23,10 @@ from bs4 import BeautifulSoup, SoupStrainer
 import Image
 
 
+def wikitext_escape(s):
+    return re.sub(r'([#<>\[\]\|\{\}|]+)', r'<nowiki>\1</nowiki>', s)
+
+
 class UploadBatch(set):
     def __init__(self, index_filename, *directories):
         f = open(index_filename)
@@ -409,8 +413,7 @@ class ImageFile(File):
 |Other versions={other_versions}
 }}}}"""
 
-        def escape(s):
-            return cgi.escape(s)
+        escape = wikitext_escape
 
         m = {}
         m['title'] = escape(self.item.description)
@@ -444,19 +447,19 @@ class ImageFile(File):
 
         if isinstance(self.item.date, ItemDate):
             if self.item.date.day:
-                m['date'] = "{{{{NARA-Date|{0}|{1}|{2}}}}}" \
+                m['date'] = "{{{{date|{0}|{1}|{2}}}}}" \
                             .format(self.item.date.year,
                                     self.item.date.month,
                                     self.item.date.day)
             elif self.item.date.month:
-                m['date'] = "{{{{NARA-Date|{0}|{1}}}}}" \
+                m['date'] = "{{{{date|{0}|{1}}}}}" \
                             .format(self.item.date.year,
                                     self.item.date.month)
             else:
-                m['date'] = "{{{{NARA-Date|{0}}}}}" \
+                m['date'] = "{{{{date|{0}}}}}" \
                             .format(self.item.date.year)
         else:
-            m['date'] = self.item.date or ""
+            m['date'] = escape(self.item.date or "")
         
         m['record_group_arc'], m['record_group'] = \
             self.item.record_group or ("", "")
