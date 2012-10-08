@@ -633,7 +633,7 @@ class UploadBot(object):
                 form = MultiPartForm()
                 form.add_field('action', 'upload')
                 form.add_field('filename', wiki_filename)
-                #form.add_field('comment', '')
+                form.add_field('comment', file.wikitext)
                 form.add_field('text', file.wikitext)
                 form.add_field('token', edit_token)
                 form.add_field('ignorewarnings', 'true')
@@ -702,7 +702,8 @@ class UploadBot(object):
         reply = self.api_request(action='move',
                                  from_='File:' + old_wiki_filename,
                                  to='File:' + new_wiki_filename,
-                                 reason="", #TODO
+                                 reason="Moving to proper filename "
+                                        "per NARA metadata",
                                  movetalk=True,
                                  movesubpages=True,
                                  ignorewarnings=True,
