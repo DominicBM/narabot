@@ -158,9 +158,12 @@ class Item(object):
             if re.match('\d+(?:/\d+(?:/\d+)?)?', date_str):
                 date = map(int, date_str.split("/"))
 
-                return ItemDate(date[0],
-                                date[1] if len(date) > 1 else None,
-                                date[2] if len(date) > 2 else None)
+                if len(date) > 2:
+                    return ItemDate(date[2], date[0], date[1])
+                elif len(date) > 1:
+                    return ItemDate(date[1], date[0], None)
+                else:
+                    return ItemDate(date[0], None, None)
             else:
                 return date_str
         else:
@@ -191,7 +194,7 @@ class Item(object):
             try:
                 self.__general_notes = \
                     self.__item_page.find(text='General Note(s):') \
-                    .parent.parent.next_sibling.text.strip()
+                    .parent.next_sibling.text.strip()
             except:
                 self.__general_notes = None
 
@@ -347,21 +350,26 @@ class File(object):
         
         return new_file
 
-    # TODO: smart truncation rules...
     @property
     def wiki_filename(self):
-        root, ext = os.path.splitext(self.filename)
-        root = re.sub(r'#|<|>|\[|\]|\||\{|\}', '-', root)
         if len(self.item.files) == 1:
-            return "{0} - NARA - {1}{2}".format(self.item.description,
-                                                self.item.arcid,
-                                                self.canonical_extension)
+            suffix = " - NARA - {0}{1}".format(self.item.arcid,
+                                               self.canonical_extension)
         else:
-            return "{0}, page {1} NARA - {1}{2}" \
-                   .format(self.item.description,
-                           self.index + 1,
-                           self.item.arcid,
-                           self.canonical_extension)
+            suffix = ", page {0} - NARA - {1}{2}" \
+                     .format(self.index + 1,
+                             self.item.arcid,
+                             self.canonical_extension)
+
+        title = self.item.description
+        while len(title + suffix) > 240:
+            title = re.sub('\s+\S+$', '', title)
+        if title == "":
+            title = self.item.description[:240 - len(suffix)]
+
+        title = re.sub(r'#|<|>|\[|\]|\||\{|\}', '-', title)
+
+        return title + suffix
 
     @property
     def os_filename(self):
@@ -808,6 +816,11 @@ if __name__ == '__main__':
     parser.add_argument('--state-file', dest='state_file',
                         metavar='STATE_FILE', action='store', default=None,
                         help="file to record upload batch state (optional)")
+    parser.add_argument('--api', dest='api_url',
+                        metavar='API_URL', action='store',
+                        default='https://commons.wikimedia.org/w/api.php',
+                        help="MediaWiki API endpoint "
+                             "(default: Wikimedia Commons' API)")
     args = parser.parse_args()
 
     if not args.username or not args.password:
@@ -815,7 +828,7 @@ if __name__ == '__main__':
               file=sys.stderr)
         sys.exit(1)
 
-    bot = UploadBot(api_url='https://commons.wikimedia.org/w/api.php',
+    bot = UploadBot(api_url=args.api_url,
                     username=args.username,
                     password=args.password,
                     index_filename=args.index_file,
