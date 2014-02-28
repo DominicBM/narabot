@@ -1,16 +1,29 @@
 #!/usr/bin/python2
-# -*- coding: utf-8  -*-
+
+###############################################################################
+#
+#               NARABOT.PY (a batch uploader for Wikipedia)
+#               Original Code by Fran Rogers
+#               Revised and extended by Joshua Westgard
+#               Version 2.0 - 2014-02-28
+#
+###############################################################################
+#
+#  begin imports
+#
 
 from __future__ import print_function
+from bs4 import BeautifulSoup, NavigableString, SoupStrainer
 import cgi
-from collections import namedtuple
 import cookielib
 from datetime import date
 import hashlib
+import Image
 import itertools
 import json
 import mimetools
 import mimetypes
+from collections import namedtuple
 import os
 import re
 import shutil
@@ -19,13 +32,47 @@ import tempfile
 import urllib
 import urllib2
 
-from bs4 import BeautifulSoup, NavigableString, SoupStrainer
-import Image
+#
+#  end imports
+###############################################################################
+#  begin variable definitions
+#
 
+Author = namedtuple('Author', ['id', 'name'])
+ItemDate = namedtuple('ItemDate', ['year', 'month', 'day'])
+FileUnit = namedtuple('FileUnit', ['id', 'name'])
+Place = namedtuple('Place', ['id', 'name', 'latitude', 'longitude'])
+RecordGroup = namedtuple('RecordGroup', ['id', 'name'])
+Series = namedtuple('Series', ['id', 'name'])
+
+#
+#  end of variable definitions
+###############################################################################
+#  begin class-independent function definitions
+#
 
 def wikitext_escape(s):
     return re.sub(r'([#<>\[\]\|\{\}|]+)', r'<nowiki>\1</nowiki>', s)
 
+
+def soup_to_plaintext(element):
+    out = ""
+    for child in element.children:
+        if isinstance(child, NavigableString):
+            out += str(child) + ' '
+        elif child.name == 'br':
+            out += '\n' + soup_to_plaintext(child)
+        elif child.name == 'p':
+            out += '\n\n' + soup_to_plaintext(child)
+        else:
+            out += soup_to_plaintext(child)
+    return out
+
+#
+#  end of class-independent function definitions
+###############################################################################
+#  begin the UPLOAD BATCH class definition
+#
 
 class UploadBatch(set):
     def __init__(self, index_filename, *directories):
@@ -64,14 +111,11 @@ class UploadBatch(set):
                 files.append(File.from_extension(self, filename))
             self.add(Item(arcid, *files))
 
-
-Author = namedtuple('Author', ['id', 'name'])
-ItemDate = namedtuple('ItemDate', ['year', 'month', 'day'])
-FileUnit = namedtuple('FileUnit', ['id', 'name'])
-Place = namedtuple('Place', ['id', 'name', 'latitude', 'longitude'])
-RecordGroup = namedtuple('RecordGroup', ['id', 'name'])
-Series = namedtuple('Series', ['id', 'name'])
-
+#
+#  end of UPLOAD BATCH class definition
+###############################################################################
+#  beginning of the ITEM class definition
+#
 
 class Item(object):
     def __init__(self, arcid, *files):
@@ -343,6 +387,11 @@ class Item(object):
 
         return self.__variant_control_numbers
 
+#
+#  end of the ITEM class
+###############################################################################
+#  beginning of the FILE class
+#
 
 class File(object):
     def __init__(self, filename):
@@ -495,6 +544,11 @@ class File(object):
         
         return text.format(**m)
 
+#
+# End of the FILE class
+###############################################################################
+# Begin various file type class definitions
+#
 
 class ImageFile(File):
     pass
@@ -534,6 +588,11 @@ class TheoraFile(VideoFile):
     def canonical_extension(self):
         return ".ogv"
 
+#
+#  end the class definitions for various file types
+###############################################################################
+#  begin the UPLOAD BOT class definiton
+#
 
 class UploadBot(object):
     def __init__(self,
@@ -754,8 +813,13 @@ class UploadBot(object):
               file=sys.stderr)
         open(new_filename + '.txt', 'w').write(file.wikitext)
 
-
+#
+# End of the UPLOAD BOT class definition
+###############################################################################
+# Beginning of the MULTI-PART FORM class
 # c/o http://www.doughellmann.com/PyMOTW/urllib2/
+#
+
 class MultiPartForm(object):
     """Accumulate the data to be used when posting a form."""
 
@@ -824,19 +888,11 @@ class MultiPartForm(object):
                 return s
         return '\r\n'.join([encode(s) for s in flattened])
 
-def soup_to_plaintext(element):
-    out = ""
-    for child in element.children:
-        if isinstance(child, NavigableString):
-            out += str(child) + ' '
-        elif child.name == 'br':
-            out += '\n' + soup_to_plaintext(child)
-        elif child.name == 'p':
-            out += '\n\n' + soup_to_plaintext(child)
-        else:
-            out += soup_to_plaintext(child)
-    return out
-
+#    
+# end of MULTI-PART FORM class
+###############################################################################
+# The main section, runs if this module is run as the main program
+#
 
 if __name__ == '__main__':
     import argparse
