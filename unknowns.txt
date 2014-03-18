@@ -1,0 +1,220 @@
+./.git
+./.gitattributes
+./.gitignore
+./EAP files
+./filedir.txt
+./narabot.py
+./README.md
+./test./.git
+./.gitattributes
+./.gitignore
+./EAP files
+./filedir.txt
+./narabot.py
+./README.md
+./test
+./unknowns.txt./.git
+./.gitattributes
+./.gitignore
+./EAP files
+./filedir.txt
+./narabot.py
+./README.md
+./test
+./unknowns.txt./.git
+./.gitattributes
+./.gitignore
+./EAP files
+./filedir.txt
+./narabot.py
+./README.md
+./test
+./unknowns.txt./.git
+./.gitattributes
+./.gitignore
+./EAP files
+./filedir.txt
+./narabot.py
+./README.md
+./test
+./unknowns.txt./.git
+./.gitattributes
+./.gitignore
+./EAP files
+./filedir.txt
+./narabot.py
+./README.md
+./test
+./unknowns.txt./.git
+./.gitattributes
+./.gitignore
+./EAP files
+./filedir.txt
+./narabot.py
+./README.md
+./test
+./unknowns.txt./.git
+./.gitattributes
+./.gitignore
+./EAP files
+./filedir.txt
+./narabot.py
+./README.md
+./test
+./unknowns.txt./.git
+./.gitattributes
+./.gitignore
+./EAP files
+./filedir.txt
+./narabot.py
+./README.md
+./test
+./unknowns.txt./.git
+./.gitattributes
+./.gitignore
+./EAP files
+./filedir.txt
+./narabot.py
+./README.md
+./test
+./unknowns.txt./.git
+./.gitattributes
+./.gitignore
+./EAP files
+./filedir.txt
+./narabot.py
+./README.md
+./test
+./unknowns.txt./.git
+./.gitattributes
+./.gitignore
+./EAP files
+./filedir.txt
+./narabot.py
+./README.md
+./test
+./unknowns.txt./.git
+./.gitattributes
+./.gitignore
+./EAP files
+./filedir.txt
+./narabot.py
+./README.md
+./test
+./unknowns.txt./.git
+./.gitattributes
+./.gitignore
+./EAP files
+./filedir.txt
+./narabot.py
+./README.md
+./test
+./unknowns.txt./.git
+./.gitattributes
+./.gitignore
+./EAP files
+./filedir.txt
+./narabot.py
+./README.md
+./test
+./testbot.py
+./unknowns.txt./.git
+./.gitattributes
+./.gitignore
+./EAP files
+./filedir.txt
+./narabot.py
+./README.md
+./test
+./testbot.py
+./unknowns.txt./.git
+./.gitattributes
+./.gitignore
+./EAP files
+./filedir.txt
+./narabot.py
+./README.md
+./test
+./testbot.py
+./unknowns.txt./.git
+./.gitattributes
+./.gitignore
+./EAP files
+./filedir.txt
+./narabot.py
+./README.md
+./test
+./testbot.py
+./unknowns.txt./.git
+./.gitattributes
+./.gitignore
+./EAP files
+./filedir.txt
+./narabot.py
+./README.md
+./test
+./testbot.py
+./unknowns.txt./.git
+./.gitattributes
+./.gitignore
+./EAP files
+./filedir.txt
+./narabot.py
+./README.md
+./test
+./testbot.py
+./unknowns.txt./.git
+./.gitattributes
+./.gitignore
+./EAP files
+./filedir.txt
+./narabot.py
+./README.md
+./test
+./testbot.py
+./unknowns.txt./.git
+./.gitattributes
+./.gitignore
+./EAP files
+./filedir.txt
+./narabot.py
+./README.md
+./test
+./testbot.py
+./unknowns.txt./.git
+./.gitattributes
+./.gitignore
+./EAP files
+./filedir.txt
+./narabot.py
+./README.md
+./test
+./testbot.py
+./unknowns.txt./.git
+./.gitattributes
+./.gitignore
+./EAP files
+./filedir.txt
+./narabot.py
+./README.md
+./test
+./testbot.py
+./unknowns.txt./.git
+./.gitattributes
+./.gitignore
+./EAP files
+./filedir.txt
+./narabot.py
+./README.md
+./test
+./testbot.py
+./unknowns.txt./.git
+./.gitattributes
+./.gitignore
+./EAP files
+./filedir.txt
+./narabot.py
+./README.md
+./test
+./testbot.py
+./unknowns.txt
