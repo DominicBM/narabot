@@ -10,5 +10,7 @@ A basic operation can be run with this command:
     python narabot.py \
     --username "myUsername" --password "myPassword" \
     --index "/path/to/index/of/files.txt" "/path/to/folder/of/images/"
+    
+testbot.py is a version of the script for experimenting with multi-page document handling.
 
 
