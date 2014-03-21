@@ -1,34 +1,32 @@
 
 #Bot looks up target file from image directory in the TXT directory and finds its ID
-#
-#Checks all other rows in the TXT to see if that ID is repeated for other file names, meaning it is multi-page
-#
-#Verifies that all the files are in the image directory; if not, logs an error and skips so we don't upload partial documents.
-#
+#Checks all other rows in the TXT to see if that ID is repeated for other file names,
+#meaning it is multi-page
+#Verifies that all the files are in the image directory; if not, logs an error and
+#skips so we don't upload partial documents.
 #Checks *all* files for duplicates before uploading any.
-#
 #Uploads each in sequence with the following changes:
-#
-#Titles should indicate page numbers, like "File:<title>_- pg. <x> of <y> -_NARA_-_<ID>.tif". The extra characters for this should come out of the title field, so the title is truncated shorter rather than the total file name becoming longer than single-page documents.
-#
+#Titles should indicate page numbers,
+#   like "File:<title>_- pg. <x> of <y> -_NARA_-_<ID>.tif".
+#The extra characters for this should come out of the title field,
+#so the title is truncated shorter rather than the total file name becoming longer
+#than single-page documents.
 #In "other versions", list only the corresponding JPG/TIFF for that page.
-#
-#In "other pages" make two galleries: one with all the JPGs of each page and one with all the TIFFs of each page. Also include the DjVu (see below). 
-#
+#In "other pages" make two galleries: one with all the JPGs of each page and one
+# with all the TIFFs of each page. Also include the DjVu (see below). 
 #Uploads a .djvu file created from all of the pages. This will have the canonical (no pg. #) naming convention, since it is a single file. It will also have the same gallery of all the pages in different versions in "other pages," but "other versions" will be blank.
-#
 #I am pretty sure imagemagick can handle DjVu conversions compiled from multiple source files, but you might need to look up how that is done (make sure maximum quality/zero compression is always on, as with the TIFF-JPG converts).
 
 
 #!/usr/bin/python2
 
 ###############################################################################
-#
-#               NARABOT.PY (a batch uploader for Wikipedia)
-#               Original Code by Fran Rogers
-#               Revised and extended by Joshua Westgard
-#               Version 2.0 - 2014-02-28
-#
+#                                                                             #
+#               NARABOT.PY (a batch uploader for Wikipedia)                   # 
+#                      Original Code by Fran Rogers                           #
+#                 Revised and extended by Joshua Westgard                     #
+#                        Version 2.0 - 2014-02-28                             #
+#                                                                             #
 ###############################################################################
 #
 #  begin imports
