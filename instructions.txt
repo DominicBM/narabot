@@ -1,0 +1,5 @@
+source venv/bin/activate
+
+python narabot.py --username "US National Archives bot" --password xxx --index "C:\Users\dmcdevittparks\Documents\GitHub\narabot\test\file dir.txt" "C:\Users\dmcdevittparks\Documents\GitHub\narabot\test"
+
+

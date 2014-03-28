@@ -99,7 +99,8 @@ class Batch(set):
         f = open(index_filename)
         
         # create dictionary to hold filename/arcid from filelist as key-value pairs
-        filename_arcids = {}
+        print("\nPreparing the upload manifest:")
+        upload_manifest = {}
         lineno = 1  # track line number in filelist for error reporting
         
         # iterate through the filenames file pulling out filenames and arcids
@@ -107,10 +108,13 @@ class Batch(set):
             m = re.match('^(.+)\s+([0-9]+)\r?$', line)
             if m:
                 filename, arcid = m.groups()
-                filename_arcids[filename.lower()] = int(arcid)
+                upload_manifest[filename.lower()] = int(arcid)
             else:
                 raise IOError("bad mapping on line {0}: {1}"
                               .format(lineno, line))
+            
+            # Report the files and arcids captured from each line
+            print("LINE {0}: FILE: {1}\tID: {2}".format(lineno, filename, arcid))
             lineno += 1
         
         # create dictionary to hold filenames from upload directory
@@ -120,38 +124,43 @@ class Batch(set):
         self.unknown_filenames = []
         
         # iterate through the specified directories
-        for directory in directories:
+        for d in directories:
+            print("\nSearching directory \"{0}\" for files to upload ...".format(d))
             # for each file found therein
-            for filename in os.listdir(directory):
+            for f in os.listdir(d):
                 # construct the full-path filename and basename
-                filename = directory + os.path.sep + filename
-                basename = os.path.basename(filename.lower())
+                fullpath = os.path.realpath(f)
+                basename = os.path.basename(f.lower())
+                print(fullpath)
+                print(basename)
                 
                 # look in the filename_arcids dictionary for the basename
-                if basename in filename_arcids:
-                    arcid = filename_arcids[basename]
+                # and lookup the arcid for that file
+                if basename in upload_manifest:
+                    arcid = upload_manifest[basename]
                     
                     # if arcid is already found in item_filenames dictionary,
                     # attach it to that item, otherwise add it as its own item
                     if arcid in item_filenames:
-                        item_filenames[arcid] += filename
+                        item_filenames[arcid].append(fullpath)
                         item_filenames[arcid].sort()
                     else:
-                        item_filenames[arcid] = [filename]
+                        item_filenames[arcid] = [fullpath]
                 
                 # add any files not found in filelist to the unknowns list
                 else:
-                    self.unknown_filenames.append(filename)
+                    self.unknown_filenames.append(fullpath)
 
-        print("Created upload batch: {0}".format(item_filenames))
+        print("\nCreated the following upload batch:")
+        for a, f in item_filenames.items():
+            print("\n{0}:".format(a))
+            print("\n".join(f for f in item_filenames[a]))
 
         # for each set of items (arcid: files) in the item_filenames dictionary
         # iterate through the list of files, creating a file object for each and
         # appending it to a list of files, which in turn is attached to an item
         for arcid, filenames in item_filenames.items():
-            files = []
-            for filename in filenames:
-                files.append(File.from_extension(self, filename))
+            files = [File.from_extension(self, f) for f in filenames]
             self.add(Item(arcid, *files))
 
 #
@@ -634,231 +643,6 @@ class TheoraFile(VideoFile):
 #
 #  end the class definitions for various file types
 ###############################################################################
-#  begin the UPLOAD BOT class definiton
-#
-
-class UploadBot(object):
-    def __init__(self,
-                 api_url,
-                 username,
-                 password,
-                 index_filename="EAP files",
-                 max_size=None,
-                 overflow_dir=None,
-                 state_filename=None,
-                 unknowns_filename=None):
-        self.api_url = api_url
-        self.jar = cookielib.CookieJar()
-        self.opener = \
-            urllib2.build_opener(urllib2.HTTPCookieProcessor(self.jar))
-        self.opener.addheaders = [('User-Agent', "narabot.py")]
-
-        print("logging in as [[User:{0}]]... ".format(username),
-              end='',
-              file=sys.stderr)
-        sys.stderr.flush()
-        reply = self.api_request(action='login',
-                                 lgname=username,
-                                 lgpassword=password)
-        if reply['result'] == 'NeedToken':
-            reply = self.api_request(action='login',
-                                     lgname=username,
-                                     lgpassword=password,
-                                     lgtoken=reply['token'])
-        assert reply['result'] == 'Success'
-        print("success!", file=sys.stderr)
-        
-        self.index_filename = index_filename
-        self.max_size = max_size
-        self.overflow_dir = overflow_dir
-        self.skip_filenames = {}
-        
-        self.unknowns_filename = unknowns_filename
-        if state_filename:
-            try:
-                for filename in open(state_filename).readlines():
-                    self.skip_filenames[filename.strip()] = True
-            except:
-                open(state_filename, 'w').close()
-        self.state_filename = state_filename
-
-    def api_request(self, **post_data):
-        for key, value in post_data.items():
-            if key.endswith('_'):
-                new_key = re.sub('_+$', '', key)
-                post_data[new_key] = value
-                del post_data[key]
-        post_data['format'] = 'json'
-        response = self.opener.open(self.api_url, urllib.urlencode(post_data))
-        response_decoded = json.load(response)
-        if not post_data['action'] in response_decoded:
-            raise Exception(response_decoded['error']['info'])
-        return response_decoded[post_data['action']]
-    
-    def upload_directory(self, *directories):
-        self.upload_batch(UploadBatch(self.index_filename, *directories))
-
-    def upload_batch(self, batch):
-        if self.unknowns_filename:
-            open(self.unknowns_filename, 'a').write(
-                "\n".join(batch.unknown_filenames))
-        for filename in batch.unknown_filenames:
-            print("skipping unknown file '{0}'".format(filename),
-                  file=sys.stderr)
-        for item in batch:
-            self.upload_item(item)
-
-    def upload_item(self, item):
-        for file in item.files:
-            if file.filename in self.skip_filenames:
-                print("file '{0}' was already uploaded"
-                      .format(file.filename),
-                      file=sys.stderr)
-            else:
-                self.upload_file(file)
-
-                if self.state_filename:
-                    f = open(self.state_filename, 'a')
-                    print(file.filename, file=f)
-                    f.close()
-
-    def upload_file(self, file):
-        wiki_filename = file.wiki_filename
-
-        print("checking for duplicates of '{0}'... "
-              .format(file.filename),
-              end='',
-              file=sys.stderr)
-        duplicate_name = self.get_duplicate_name(file)
-        if duplicate_name:
-            duplicate_name = re.sub('^.+?:', '', duplicate_name)
-                                
-        if duplicate_name == wiki_filename:
-            print()
-            print("[[File:{0}]] already exists!".format(duplicate_name),
-                  file=sys.stderr)
-        elif duplicate_name:
-            print()
-            self.move_existing_file(duplicate_name, wiki_filename)
-        else:
-            print("none!", file=sys.stderr)
-            
-            if self.max_size and file.size > self.max_size:
-                if self.overflow_dir:
-                    self.upload_big_file(file)
-                else:
-                    print("file '{0}' exceeds maximum size; skipping",
-                          file=sys.stderr)
-            else:
-                print("uploading '{0}' as [[File:{1}]]... "
-                      .format(file.filename, wiki_filename),
-                      end='',
-                      file=sys.stderr)
-                sys.stderr.flush()
-
-                reply = self.api_request(action='query',
-                                         prop='info',
-                                         titles=duplicate_name,
-                                         intoken='edit')
-                edit_token = reply['pages'].values()[0]['edittoken']
-
-                form = MultiPartForm()
-                form.add_field('action', 'upload')
-                form.add_field('filename', wiki_filename)
-                form.add_field('comment', file.wikitext)
-                form.add_field('text', file.wikitext)
-                form.add_field('token', edit_token)
-                form.add_field('ignorewarnings', 'true')
-                form.add_file('file', file.os_filename, 
-                              open(file.filename, 'rb'))
-
-                request = urllib2.Request(self.api_url)
-                body = str(form)
-                request.add_header('Content-type', form.get_content_type())
-                request.add_header('Content-length', len(body))
-                request.add_data(body)
-                response = self.opener.open(request)
-
-                error = re.findall('(?m)^MediaWiki-API-Error: (.*)$',
-                                   str(response.info()))
-                if error:
-                    raise Exception(error[0])
-                    print("failed.", file=sys.stderr)
-                else:
-                    print("success!", file=sys.stderr)
-        
-        if isinstance(file, ImageFile) and not isinstance(file, JPEGFile):
-            new_basename_root, old_ext = \
-                os.path.splitext(os.path.basename(file.filename))
-            new_basename = new_basename_root + '.jpg'
-            new_filename = tempfile.gettempdir() + os.path.sep + new_basename
-            print("converting '{0}' to '{1}'".format(file.filename,
-                                                     new_filename),
-                  file=sys.stderr)
-            jpeg = file.to_jpeg()
-            self.upload_file(jpeg)
-            print("deleting '{0}'".format(new_filename),
-                  file=sys.stderr)
-            os.remove(jpeg.filename)
-    
-    def get_duplicate_name(self, file):
-        sha1 = hashlib.sha1()
-        f = open(file.filename, 'rb')
-        while True:
-            block = f.read(512)
-            if not block:
-                break
-            sha1.update(block)
-        reply = self.api_request(action='query',
-                                 list='allimages',
-                                 aisha1=sha1.hexdigest())
-        if len(reply['allimages']):
-            duplicate_name = reply['allimages'][0]['title']
-            return duplicate_name
-        else:
-            return None
-
-    def move_existing_file(self, old_wiki_filename, new_wiki_filename):
-        print("moving [[File:{0}]] to [[File:{1}]]... "
-              .format(old_wiki_filename, new_wiki_filename),
-              end='',
-              file=sys.stderr)
-        sys.stderr.flush()
-        
-        reply = self.api_request(action='query',
-                                 prop='info',
-                                 titles=old_wiki_filename,
-                                 intoken='move')
-        move_token = reply['pages'].values()[0]['movetoken']
-
-        reply = self.api_request(action='move',
-                                 from_='File:' + old_wiki_filename,
-                                 to='File:' + new_wiki_filename,
-                                 reason="Moving to proper filename "
-                                        "per NARA metadata",
-                                 movetalk=True,
-                                 movesubpages=True,
-                                 ignorewarnings=True,
-                                 token=move_token)
-        # TODO change text of new page
-        # errors should throw an exception right now...
-        if True:
-            print("success!", file=sys.stderr)
-        else:
-            print("failed.", file=sys.stderr)
-
-    def upload_big_file(self, file):
-        new_filename = self.overflow_dir + os.path.sep + file.os_filename
-        print("copying '{0}' to '{1}'".format(file.filename, new_filename),
-              file=sys.stderr)
-        shutil.copy(file.filename, new_filename)
-        print("writing metadata to '{0}.txt'".format(new_filename),
-              file=sys.stderr)
-        open(new_filename + '.txt', 'w').write(file.wikitext)
-
-#
-# End of the UPLOAD BOT class definition
-###############################################################################
 #  begin the TEST BOT class definiton
 #
 
@@ -878,7 +662,7 @@ class TestBot(object):
             urllib2.build_opener(urllib2.HTTPCookieProcessor(self.jar))
         self.opener.addheaders = [('User-Agent', "narabot.py")]
         
-        print("Creating a test bot!\n")
+        print("Creating a test bot ...\n")
         print("Logging in as [[User:{0}]] ... ".format(username),
               end='',
               file=sys.stderr)
@@ -924,7 +708,7 @@ class TestBot(object):
 
     
     def upload_directory(self, *directories):
-        print("Uploading files in directory: {0} ... ".format(*directories))
+        print("Preparing the upload batch ... ")
         self.upload_batch(Batch(self.index_filename, *directories))
 
 
@@ -932,6 +716,7 @@ class TestBot(object):
         if self.unknowns_filename:
             open(self.unknowns_filename, 'a').write(
                 "\n".join(batch.unknown_filenames))
+        print("\nSkipping Extra Files")
         for filename in batch.unknown_filenames:
             print("skipping unknown file '{0}'".format(filename),
                   file=sys.stderr)
@@ -1221,16 +1006,6 @@ if __name__ == '__main__':
         print("error: username and password required",
               file=sys.stderr)
         sys.exit(1)
-
-    #bot = UploadBot(api_url=args.api_url,
-    #                username=args.username,
-    #                password=args.password,
-    #                index_filename=args.index_file,
-    #                max_size=args.max_size,
-    #                overflow_dir=args.overflow_dir,
-    #                state_filename=args.state_file,
-    #                unknowns_filename=args.unknowns_file)
-    #bot.upload_directory(*args.directories)
 
     bot = TestBot(api_url=args.api_url,
                     username=args.username,
