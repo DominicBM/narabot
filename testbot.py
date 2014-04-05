@@ -99,7 +99,7 @@ class Batch(set):
         f = open(index_filename)
         
         # create dictionary to hold filename/arcid from filelist as key-value pairs
-        print("\nPreparing the upload manifest:")
+        print("\nUpload Manifest:")
         upload_manifest = {}
         lineno = 1  # track line number in filelist for error reporting
         
@@ -114,7 +114,7 @@ class Batch(set):
                               .format(lineno, line))
             
             # Report the files and arcids captured from each line
-            print("LINE {0}: FILE: {1}\tID: {2}".format(lineno, filename, arcid))
+            print("LINE {0}: FILE: {1}\tARC ID: {2}".format(lineno, filename, arcid))
             lineno += 1
         
         # create dictionary to hold filenames from upload directory
@@ -128,11 +128,12 @@ class Batch(set):
             print("\nSearching directory \"{0}\" for files to upload ...".format(d))
             # for each file found therein
             for f in os.listdir(d):
-                # construct the full-path filename and basename
-                fullpath = os.path.realpath(f)
-                basename = os.path.basename(f.lower())
-                print(fullpath)
-                print(basename)
+                # construct the full-path filename and basename,
+                # joining relative directory and filename to the abspath
+                fullpath = os.path.abspath(os.path.join(d, f))
+                print("Full path = {0}".format(fullpath))
+                basename = os.path.basename(os.path.join(d, f.lower()))
+                print("Basename = {0}".format(basename))
                 
                 # look in the filename_arcids dictionary for the basename
                 # and lookup the arcid for that file
@@ -162,6 +163,7 @@ class Batch(set):
         for arcid, filenames in item_filenames.items():
             files = [File.from_extension(self, f) for f in filenames]
             self.add(Item(arcid, *files))
+            
 
 #
 #  end of BATCH class definition
@@ -171,6 +173,7 @@ class Batch(set):
 
 class Item(object):
     def __init__(self, arcid, *files):
+        print("\nGenerating item for arcid #{0}".format(arcid))
         self.arcid = arcid
         self.files = files
         for n in range(len(self.files)):
