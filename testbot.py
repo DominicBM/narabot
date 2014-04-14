@@ -18,7 +18,7 @@
 #I am pretty sure imagemagick can handle DjVu conversions compiled from multiple source files, but you might need to look up how that is done (make sure maximum quality/zero compression is always on, as with the TIFF-JPG converts).
 
 
-#!/usr/bin/python2
+#! /usr/bin/python 
 
 ###############################################################################
 #                                                                             #
@@ -55,7 +55,7 @@ import urllib2
 #
 #  end imports
 ###############################################################################
-#  begin variable definitions
+#  begin variable declarations
 #
 
 Author = namedtuple('Author', ['id', 'name'])
@@ -66,7 +66,7 @@ RecordGroup = namedtuple('RecordGroup', ['id', 'name'])
 Series = namedtuple('Series', ['id', 'name'])
 
 #
-#  end of variable definitions
+#  end of variable declarations
 ###############################################################################
 #  begin class-independent function definitions
 #
@@ -191,8 +191,11 @@ class Item(object):
 
     @property
     def __item_url(self):
-        return 'http://arcweb.archives.gov/arc/action/ExternalIdSearch?id=' + \
+        url = 'http://arcweb.archives.gov/arc/action/ExternalIdSearch?id=' + \
                str(self.arcid)
+        print(url)
+        return(url)
+        
 
     @property
     def __item_page(self):
