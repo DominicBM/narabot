@@ -1,11 +1,11 @@
-#! /usr/bin/python 
+#! /usr/bin/env python 
 
 ###############################################################################
 #                                                                             #
 #               NARABOT.PY (a batch uploader for Wikipedia)                   # 
 #                      Original Code by Fran Rogers                           #
 #                 Revised and extended by Joshua Westgard                     #
-#                        Version 2.0 - 2014-02-28                             #
+#                        Version 2.0 - 2014-04-17                             #
 #                                                                             #
 ###############################################################################
 #
