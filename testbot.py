@@ -193,7 +193,6 @@ class Item(object):
     def __item_url(self):
         url = 'http://arcweb.archives.gov/arc/action/ExternalIdSearch?id=' + \
                str(self.arcid)
-        print(url)
         return(url)
         
 
@@ -202,6 +201,7 @@ class Item(object):
         if not hasattr(self, '__item_page_cached'):
             self.__item_page_cached = \
                 BeautifulSoup(self.__opener.open(self.__item_url).read())
+            print(self.__hierarchy_page_cached)
         return self.__item_page_cached
 
     @property
@@ -500,8 +500,9 @@ class File(object):
             suffix = " - NARA - {0}{1}".format(self.item.arcid,
                                                self.canonical_extension)
         else:
-            suffix = ", page {0} - NARA - {1}{2}" \
+            suffix = ", p. {0} of {1} - NARA - {2}{3}" \
                      .format(self.index + 1,
+                             len(self.item.files),
                              self.item.arcid,
                              self.canonical_extension)
 
@@ -649,10 +650,10 @@ class TheoraFile(VideoFile):
 #
 #  end the class definitions for various file types
 ###############################################################################
-#  begin the TEST BOT class definiton
+#  begin the UPLOAD BOT class definiton
 #
 
-class TestBot(object):
+class UploadBot(object):
     def __init__(self,
                  api_url,
                  username,
@@ -883,7 +884,7 @@ class TestBot(object):
         open(new_filename + '.txt', 'w').write(file.wikitext)
 
 #
-# End of the TEST BOT class definition
+# End of the UPLOAD BOT class definition
 ###############################################################################
 # Beginning of the MULTI-PART FORM class
 # c/o http://www.doughellmann.com/PyMOTW/urllib2/
@@ -1013,7 +1014,7 @@ if __name__ == '__main__':
               file=sys.stderr)
         sys.exit(1)
 
-    bot = TestBot(api_url=args.api_url,
+    bot = UploadBot(api_url=args.api_url,
                     username=args.username,
                     password=args.password,
                     index_filename=args.index_file,
