@@ -175,13 +175,11 @@ class Item(object):
                str(self.arcid)
         return(url)
         
-
     @property
     def __item_page(self):
         if not hasattr(self, '__item_page_cached'):
             self.__item_page_cached = \
-                BeautifulSoup(self.__opener.open(self.__item_url).read())
-            print(self.__hierarchy_page_cached)
+                BeautifulSoup(self.__opener.open(self.__item_url).read())    
         return self.__item_page_cached
 
     @property
@@ -581,6 +579,7 @@ class File(object):
                     self.item[0].wiki_filename,
                     self.item[0].wiki_filename[:-4] + ".jpg")
         
+        print(text.format(**m))
         return text.format(**m)
 
 #
