@@ -54,7 +54,6 @@ Series = namedtuple('Series', ['id', 'name'])
 def wikitext_escape(s):
     return re.sub(r'([#<>\[\]\|\{\}|]+)', r'<nowiki>\1</nowiki>', s)
 
-
 def soup_to_plaintext(element):
     out = ""
     for child in element.children:
@@ -92,7 +91,6 @@ class Batch(set):
             else:
                 raise IOError("bad mapping on line {0}: {1}"
                               .format(lineno, line))
-            
             # Report the files and arcids captured from each line
             print("LINE {0}: FILE: {1}\tARC ID: {2}".format(lineno, filename, arcid))
             lineno += 1
@@ -143,7 +141,6 @@ class Batch(set):
         for arcid, filenames in item_filenames.items():
             files = [File.from_extension(self, f) for f in filenames]
             self.add(Item(arcid, *files))
-            
 
 #
 #  end of BATCH class definition
@@ -159,7 +156,6 @@ class Item(object):
         for n in range(len(self.files)):
             files[n].item = self
             files[n].index = n
-
         jar = cookielib.CookieJar()
         self.__opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(jar))
 
@@ -209,7 +205,6 @@ class Item(object):
                     self.__authors.append(Author(int(m.group(1)), a.text))
             except:
                 self.__authors = None
-
         return self.__authors
 
     @property
@@ -227,7 +222,6 @@ class Item(object):
                         self.__contacts.append(contact)
             except:
                 self.__contacts = None
-
         return self.__contacts        
 
     @property
@@ -244,7 +238,6 @@ class Item(object):
                         self.__creators.append(creator)
             except:
                 self.__creators = None
-
         return self.__creators
 
     @property
@@ -254,7 +247,6 @@ class Item(object):
                          self.__item_page.find(text='Coverage Dates:') or \
                          self.__item_page.find(text='Broadcast Date(s):') or \
                          None
-
             if date_field:
                 date_str = date_field.parent.parent.next_sibling.text.strip()
 
@@ -269,11 +261,9 @@ class Item(object):
                 date_str = re.sub(r'(?<![{=|])\b(\d+)',
                                   r"{{date|\1}}",
                                   date_str)
-                
                 self.__dates = date_str
             else:
                 self.__dates = None
-
         return self.__dates
 
     @property
@@ -285,14 +275,11 @@ class Item(object):
         if not hasattr(self, '__file_unit'):
             try:
                 treel3 = self.__hierarchy_page.find('span', 'treel3')
-
                 name = treel3.find('span', 'hierRecord').text
                 id = treel3.find('span', 'hierlocalid').strong.text
-                
                 self.__file_unit = FileUnit(id, name)
             except:
                 self.__file_unit = None
-        
         return self.__file_unit
 
     @property
@@ -304,7 +291,6 @@ class Item(object):
                     .parent.next_sibling.text.strip()
             except:
                 self.__general_notes = None
-
         return self.__general_notes
 
     @property
@@ -317,7 +303,6 @@ class Item(object):
                 self.__local_identifier = m.group(2)
             except:
                 self.__local_identifier = None
-            
         return self.__local_identifier
 
     @property
@@ -334,7 +319,6 @@ class Item(object):
                     name = a.text
                     latitude = None
                     longitude = None
-
                     try:
                         place_url = ('http://arcweb.archives.gov/arc/action/'
                                      + a['href'])
@@ -352,11 +336,9 @@ class Item(object):
                         longitude = m.group(2)
                     except:
                         pass
-                    
                     self.__places.append(Place(id, name, latitude, longitude))
             except:
                 self.__places = None
-
         return self.__places
 
     @property
@@ -367,11 +349,9 @@ class Item(object):
                 name = treel1.span.strong.text.strip() + " " + \
                        treel1.find('span', 'hierRecord').text.strip()
                 id = int(treel1.find('span', 'hierlocalid').strong.text)
-                
                 self.__record_group = RecordGroup(id, name)
             except:
                 self.__record_group = None
-        
         return self.__record_group
 
     @property
@@ -388,7 +368,6 @@ class Item(object):
                 self.__scope_and_content = soup.text.strip()
             else:
                 self.__scope_and_content = None
-        
         return self.__scope_and_content
 
     @property
@@ -398,11 +377,9 @@ class Item(object):
                 treel2 = self.__hierarchy_page.find('span', 'treel2')
                 name = treel2.find('span', 'hierRecord').text.strip()
                 id = int(treel2.find('span', 'hierlocalid').strong.text)
-                
                 self.__series = Series(id, name)
             except:
                 self.__series = None
-        
         return self.__series
 
     @property
@@ -420,8 +397,18 @@ class Item(object):
                         self.__variant_control_numbers.append(vcn)
             except:
                 self.__variant_control_numbers = None
-
         return self.__variant_control_numbers
+
+    @property
+    def other_pages(self):
+        if not hasattr(self, '__other_pages'):
+            try:
+                self.__other_pages = []
+                for n in range(len(self.files)):
+                    self.__other_pages.append("p. {0}".format(n+1))
+            except:
+                self.__other_pages = None
+        return self.__other_pages
 
 #
 #  end of the ITEM class
@@ -465,11 +452,9 @@ class File(object):
         if image.mode != 'RGB':
             image = image.convert('RGB')
         image.save(new_filename, 'JPEG', quality=100)
-        
         new_file = JPEGFile(new_filename)
         new_file.item = self.item
         new_file.index = self.index
-        
         return new_file
 
     @property
@@ -483,16 +468,13 @@ class File(object):
                              len(self.item.files),
                              self.item.arcid,
                              self.canonical_extension)
-
         title = self.item.description
         while len(title + suffix) > 120:
             title = re.sub('\s+\S+$', '', title)
         if title == "":
             title = self.item.description[:120 - len(suffix)]
-
         title = re.sub(r'#|<|>|\[|\]|\||\{|\}|:|/', '-', title)
         title = re.sub('\s+', ' ', title)
-
         return title + suffix
 
     @property
@@ -522,6 +504,7 @@ class File(object):
         text += u"|Variant control numbers={variant_control_numbers}\n"
         text += u"|TIFF={tiff}\n"
         text += u"|Other versions={other_versions}\n"
+        text += u"|Other pages={other_pages}\n"
         text += u"}}}}\n\n"
         text += u"== {{{{int:license}}}} ==\n"
         text += u"{{{{NARA-cooperation}}}}\n"
@@ -537,13 +520,11 @@ class File(object):
         m['arc'] = self.item.arcid
         m['local_identifier'] = escape(self.item.local_id or "")
         m['creator'] = "<br/>\n".join(map(escape, self.item.creators or []))
-        
         authors = []
         for author in self.item.authors or []:
             authors.append("{{{{NARA-Author|{0}|{1}}}}}"
                            .format(escape(author.name), author.id))
         m['author'] = "<br/>\n".join(authors)
-
         places = []
         for place in self.item.places or []:
             if place.latitude and place.longitude:
@@ -557,11 +538,8 @@ class File(object):
                               .format(escape(place.name),
                                       place.id))
         m['place'] = "<br/>\n".join(places)
-
         m['location'] = "<br/>\n".join(map(escape, self.item.contacts or ""))
-
         m['date'] = self.item.dates or ""
-        
         m['record_group_arc'], m['record_group'] = \
             self.item.record_group or ("", "")
         m['series_arc'], m['series'] = \
@@ -571,14 +549,18 @@ class File(object):
         m['variant_control_numbers'] = \
             "\n*".join(map(escape, self.item.variant_control_numbers or []))
         m['tiff'] = "yes" if isinstance(self, TIFFFile) else ""
-
         m['other_versions'] = ""
         if isinstance(self.item[0], TIFFFile):
             m['other_versions'] = \
                 "<gallery>\nFile:{0}|.tif\nFile:{1}|.jpg\n</gallery>".format(
                     self.item[0].wiki_filename,
                     self.item[0].wiki_filename[:-4] + ".jpg")
-        
+        if len(self.item.files) > 1:
+            m['other_pages'] = "<gallery>{0}</gallery>".format(
+                " | ".join(self.item.other_pages))
+        else:
+            m['other_pages'] = ""
+        print(m['other_pages'])    
         print(text.format(**m))
         return text.format(**m)
 
