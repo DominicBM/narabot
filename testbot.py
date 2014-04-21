@@ -18,7 +18,7 @@ import cgi
 import cookielib
 from datetime import date
 import hashlib
-import image
+import Image
 import itertools
 import json
 import mimetools

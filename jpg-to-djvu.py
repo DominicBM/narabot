@@ -4,9 +4,23 @@ from __future__ import print_function
 import os, subprocess, sys
 
 def make_djvu(infile, outdir):
-    outfile = outdir.join
-    subprocess.call(["c44", infile, outfile])
-    print("Converting {0} => {1}".format(infile, outfile))
+    base, ext = os.path.splitext(infile)
+    outfile = base + ".djvu"
+    outpath = os.path.join(outdir, outfile)
+#   subprocess.call(["c44", infile, outpath])
+    print("Converting {0} => {1}".format(infile, outpath))
+
+def read_manifest(file):
+    output = {}
+    with open(file, 'r') as f:
+        filelist = f.readlines()
+        for line in filelist:
+            ff = line.split(" ")
+            if ff[0] not in output:
+                output[ff[0]] = [ff[1].rstrip()]
+            else:
+                output[ff[0]].append(ff[1].rstrip())
+    return output
 
 if __name__ == "__main__":
     path = sys.argv[1]
@@ -15,8 +29,16 @@ if __name__ == "__main__":
         # prune files and directories beginning with dot
         dirs[:] = [d for d in dirs if not d.startswith('.')]
         files[:] = [f for f in files if not f.startswith('.')]
-    for x in files:
-        print(x)
+        for f in files:
+            print(os.path.join(root, f))
+    
+    filesbyitem = read_manifest(sys.argv[2])
+    print(filesbyitem)
+    
+    for i in filesbyitem:
+        for f in filesbyitem[i]:
+            make_djvu(f, i)
+            
     
     
     #try:
