@@ -399,17 +399,6 @@ class Item(object):
                 self.__variant_control_numbers = None
         return self.__variant_control_numbers
 
-    @property
-    def other_pages(self):
-        if not hasattr(self, '__other_pages'):
-            try:
-                self.__other_pages = []
-                for n in range(len(self.files)):
-                    self.__other_pages.append("p. {0}".format(n+1))
-            except:
-                self.__other_pages = None
-        return self.__other_pages
-
 #
 #  end of the ITEM class
 ###############################################################################
@@ -437,6 +426,14 @@ class File(object):
     @property
     def canonical_extension(self):
         raise NotImplementedError
+
+    @property
+    def other_pages(self):
+        result = []
+        for f in self.item.files:
+            if f.wiki_filename != self.wiki_filename:
+                result.append(f.wiki_filename)
+        return result
 
     @property
     def size(self):
@@ -555,9 +552,8 @@ class File(object):
                 "<gallery>\nFile:{0}|.tif\nFile:{1}|.jpg\n</gallery>".format(
                     self.item[0].wiki_filename,
                     self.item[0].wiki_filename[:-4] + ".jpg")
-        if len(self.item.files) > 1:
-            m['other_pages'] = "<gallery>{0}</gallery>".format(
-                " | ".join(self.item.other_pages))
+        if self.other_pages:
+            m['other_pages'] = " | ".join(self.other_pages)
         else:
             m['other_pages'] = ""
         print(m['other_pages'])    
