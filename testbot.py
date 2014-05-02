@@ -561,9 +561,9 @@ class File(object):
         if self.other_pages:
             pagelinks = ""
             for (pagenumber, filename) in self.other_pages:
-                pagelinks += '\nFile:{0}|thumb|left|alt="{0}"|page {1}\n'.format(
+                pagelinks += 'File:{0}|thumb|left|alt="{0}"|page {1}\n'.format(
                     filename, pagenumber)
-            m['other_pages'] = "<gallery>\n{0}\n</gallery>".format(pagelinks)
+            m['other_pages'] = "<gallery>\n{0}</gallery>".format(pagelinks)
         else:
             m['other_pages'] = ""
         return text.format(**m)
@@ -739,6 +739,7 @@ class UploadBot(object):
                     print("file '{0}' exceeds maximum size; skipping",
                           file=sys.stderr)
             else:
+                print("\nAssembling metadata:\n{0}\n".format(file.wikitext))
                 print("uploading '{0}' as [[File:{1}]]... "
                       .format(file.filename, wiki_filename),
                       end='',
