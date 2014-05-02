@@ -18,7 +18,7 @@ import cgi
 import cookielib
 from datetime import date
 import hashlib
-import Image
+from PIL import Image
 import itertools
 import json
 import mimetools
@@ -156,6 +156,8 @@ class Item(object):
         for n in range(len(self.files)):
             files[n].item = self
             files[n].index = n
+        for i in self.pagination:
+            print("Page {0}: {1}".format(i[0], i[1]))
         jar = cookielib.CookieJar()
         self.__opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(jar))
 
@@ -192,6 +194,16 @@ class Item(object):
             else:
                 self.__hierarchy_page_cached = None
         return self.__hierarchy_page_cached
+    
+    @property
+    def pagination(self):
+        if not hasattr(self, '__pagination'):
+            try:
+                self.__pagination = [(i+1, j) for i, j in enumerate(self.files)]
+                print(self.__pagination)
+            except:
+                self.__pagination = None
+        return self.__pagination
 
     @property
     def authors(self):
@@ -249,9 +261,7 @@ class Item(object):
                          None
             if date_field:
                 date_str = date_field.parent.parent.next_sibling.text.strip()
-
                 date_str = wikitext_escape(date_str)
-
                 date_str = re.sub(r'(?<![{=|])\b(\d+)/(\d+)/(\d+)',
                                   r"{{date|\3|\1|\2}}",
                                   date_str)
@@ -429,11 +439,8 @@ class File(object):
 
     @property
     def other_pages(self):
-        result = []
-        for f in self.item.files:
-            if f.wiki_filename != self.wiki_filename:
-                result.append(f.wiki_filename)
-        return result
+        return [(p+1, f.wiki_filename) for p, f in enumerate(self.item.files)
+                if f.wiki_filename != self.wiki_filename]
 
     @property
     def size(self):
@@ -553,11 +560,12 @@ class File(object):
                     self.item[0].wiki_filename,
                     self.item[0].wiki_filename[:-4] + ".jpg")
         if self.other_pages:
-            m['other_pages'] = " | ".join(self.other_pages)
+            links = ""
+            for (num, page) in self.other_pages:
+                links += '\nFile:{0}|thumb|left|alt="{0}"|page {1}\n'.format(page, num)
+            m['other_pages'] = "<gallery>\n{0}\n</gallery>".format(links)
         else:
             m['other_pages'] = ""
-        print(m['other_pages'])    
-        print(text.format(**m))
         return text.format(**m)
 
 #
