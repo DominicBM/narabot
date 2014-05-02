@@ -437,9 +437,8 @@ class File(object):
         raise NotImplementedError
 
     @property
-    def other_pages(self):
-        return [(p+1, f.wiki_filename) for p, f in enumerate(self.item.files)
-                if f.wiki_filename != self.wiki_filename]
+    def all_pages(self):
+        return [(p+1, f.wiki_filename) for p, f in enumerate(self.item.files)]
 
     @property
     def size(self):
@@ -558,11 +557,17 @@ class File(object):
                 "<gallery>\nFile:{0}|.tif\nFile:{1}|.jpg\n</gallery>".format(
                     self.item[0].wiki_filename,
                     self.item[0].wiki_filename[:-4] + ".jpg")
-        if self.other_pages:
+        if self.all_pages:
             pagelinks = ""
-            for (pagenumber, filename) in self.other_pages:
-                pagelinks += 'File:{0}|thumb|left|alt="{0}"|page {1}\n'.format(
-                    filename, pagenumber)
+            for (pagenumber, filename) in self.all_pages:
+                if filename.endswith(".tif"):
+                    pagelinks += 'File:{0}|thumb|left|alt="{0}"|page {1} (TIFF)\n'.format(
+                        filename, pagenumber)
+                    pagelinks += 'File:{0}|thumb|left|alt="{0}"|page {1} (JPG)\n'.format(
+                        (filename[:-4] + ".jpg"), pagenumber)
+                else:
+                    pagelinks += 'File:{0}|thumb|left|alt="{0}"|page {1} (JPG)\n'.format(
+                        filename, pagenumber)
             m['other_pages'] = "<gallery>\n{0}</gallery>".format(pagelinks)
         else:
             m['other_pages'] = ""
