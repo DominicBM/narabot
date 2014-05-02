@@ -200,7 +200,6 @@ class Item(object):
         if not hasattr(self, '__pagination'):
             try:
                 self.__pagination = [(i+1, j) for i, j in enumerate(self.files)]
-                print(self.__pagination)
             except:
                 self.__pagination = None
         return self.__pagination
@@ -560,10 +559,11 @@ class File(object):
                     self.item[0].wiki_filename,
                     self.item[0].wiki_filename[:-4] + ".jpg")
         if self.other_pages:
-            links = ""
-            for (num, page) in self.other_pages:
-                links += '\nFile:{0}|thumb|left|alt="{0}"|page {1}\n'.format(page, num)
-            m['other_pages'] = "<gallery>\n{0}\n</gallery>".format(links)
+            pagelinks = ""
+            for (pagenumber, filename) in self.other_pages:
+                pagelinks += '\nFile:{0}|thumb|left|alt="{0}"|page {1}\n'.format(
+                    filename, pagenumber)
+            m['other_pages'] = "<gallery>\n{0}\n</gallery>".format(pagelinks)
         else:
             m['other_pages'] = ""
         return text.format(**m)
