@@ -567,7 +567,7 @@ class File(object):
                     jpglinks += 'File:{0}|page {1} (JPG)\n'.format(
                         (filename[:-4] + ".jpg"), pagenumber)
                 else:
-                    tiflinks += 'File:{0}|thumb|left|alt="{0}"|page {1} (JPG)\n'.format(
+                    jpglinks += 'File:{0}|page {1} (JPG)\n'.format(
                         filename, pagenumber)
             m['other_pages'] = "<gallery>\n{0}</gallery>\n<gallery>\n{1}</gallery>".format(
                 tiflinks, jpglinks)
