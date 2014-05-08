@@ -558,17 +558,19 @@ class File(object):
                     self.item[0].wiki_filename,
                     self.item[0].wiki_filename[:-4] + ".jpg")
         if self.all_pages:
-            pagelinks = ""
+            tiflinks = ""
+            jpglinks = ""
             for (pagenumber, filename) in self.all_pages:
                 if filename.endswith(".tif"):
-                    pagelinks += 'File:{0}|page {1} (TIFF)\n'.format(
+                    tiflinks += 'File:{0}|page {1} (TIFF)\n'.format(
                         filename, pagenumber)
-                    pagelinks += 'File:{0}|page {1} (JPG)\n'.format(
+                    jpglinks += 'File:{0}|page {1} (JPG)\n'.format(
                         (filename[:-4] + ".jpg"), pagenumber)
                 else:
-                    pagelinks += 'File:{0}|thumb|left|alt="{0}"|page {1} (JPG)\n'.format(
+                    tiflinks += 'File:{0}|thumb|left|alt="{0}"|page {1} (JPG)\n'.format(
                         filename, pagenumber)
-            m['other_pages'] = "<gallery>\n{0}</gallery>".format(pagelinks)
+            m['other_pages'] = "<gallery>\n{0}</gallery>\n<gallery>\n{1}</gallery>".format(
+                tiflinks, jpglinks)
         else:
             m['other_pages'] = ""
         return text.format(**m)
