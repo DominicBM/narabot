@@ -554,7 +554,7 @@ class File(object):
         m['other_versions'] = ""
         if isinstance(self.item[0], TIFFFile):
             m['other_versions'] = \
-                "<gallery>\nFile:{0}|.tif\nFile:{1}|.jpg\n</gallery>".format(
+                "<gallery>\nFile:{0}|This page as TIFF\nFile:{1}|This page as JPG\n</gallery>".format(
                     self.item[0].wiki_filename,
                     self.item[0].wiki_filename[:-4] + ".jpg")
         if self.all_pages:
@@ -567,7 +567,7 @@ class File(object):
                     jpglinks += 'File:{0}|page {1} (JPG)\n'.format(
                         (filename[:-4] + ".jpg"), pagenumber)
                 else:
-                    jpglinks += 'File:{0}|page {1} (JPG)\n'.format(
+                    tiflinks += 'File:{0}|thumb|left|alt="{0}"|page {1} (JPG)\n'.format(
                         filename, pagenumber)
             m['other_pages'] = "<gallery>\n{0}</gallery>\n<gallery>\n{1}</gallery>".format(
                 tiflinks, jpglinks)
