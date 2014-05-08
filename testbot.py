@@ -508,7 +508,7 @@ class File(object):
         text += u"|Other versions={other_versions}\n"
         text += u"|Other pages={other_pages}\n"
         text += u"}}}}\n\n"
-        text += u"== {{{{int:license}}}} ==\n"
+        text += u"== {{{{int:license-header}}}} ==\n"
         text += u"{{{{NARA-cooperation}}}}\n"
         text += u"{{{{PD-USGov}}}}\n\n"
         text += u"{{{{Uncategorized-NARA|year={{{{subst:CURRENTYEAR}}}}|month={{{{subst:CURRENTMONTHNAME}}}}|day={{{{subst:CURRENTDAY}}}}}}}}"
