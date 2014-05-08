@@ -169,3 +169,5 @@ EAP files-restricted.txt
 EAP files-unique
 
 test/narabot.py
+
+venv/
