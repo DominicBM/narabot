@@ -561,9 +561,9 @@ class File(object):
             pagelinks = ""
             for (pagenumber, filename) in self.all_pages:
                 if filename.endswith(".tif"):
-                    pagelinks += 'File:{0}|thumb|left|alt="{0}"|page {1} (TIFF)\n'.format(
+                    pagelinks += 'File:{0}|page {1} (TIFF)\n'.format(
                         filename, pagenumber)
-                    pagelinks += 'File:{0}|thumb|left|alt="{0}"|page {1} (JPG)\n'.format(
+                    pagelinks += 'File:{0}|page {1} (JPG)\n'.format(
                         (filename[:-4] + ".jpg"), pagenumber)
                 else:
                     pagelinks += 'File:{0}|thumb|left|alt="{0}"|page {1} (JPG)\n'.format(
