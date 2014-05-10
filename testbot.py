@@ -508,7 +508,7 @@ class File(object):
         text += u"|Other versions={other_versions}\n"
         text += u"|Other pages={other_pages}\n"
         text += u"}}}}\n\n"
-        text += u"== {{{{int:license}}}} ==\n"
+        text += u"== {{{{int:license-header}}}} ==\n"
         text += u"{{{{NARA-cooperation}}}}\n"
         text += u"{{{{PD-USGov}}}}\n\n"
         text += u"{{{{Uncategorized-NARA|year={{{{subst:CURRENTYEAR}}}}|month={{{{subst:CURRENTMONTHNAME}}}}|day={{{{subst:CURRENTDAY}}}}}}}}"
@@ -562,12 +562,12 @@ class File(object):
             jpglinks = ""
             for (pagenumber, filename) in self.all_pages:
                 if filename.endswith(".tif"):
-                    tiflinks += 'File:{0}|page {1} (TIFF)\n'.format(
+                    tiflinks += 'File:{0}|page&#32;{1} (TIFF)\n'.format(
                         filename, pagenumber)
                     jpglinks += 'File:{0}|page {1} (JPG)\n'.format(
                         (filename[:-4] + ".jpg"), pagenumber)
                 else:
-                    tiflinks += 'File:{0}|alt="{0}"|page {1} (JPG)\n'.format(
+                    jpglinks += 'File:{0}|page {1} (JPG)\n'.format(
                         filename, pagenumber)
             m['other_pages'] = "<gallery>\n{0}</gallery>\n<gallery>\n{1}</gallery>".format(
                 tiflinks, jpglinks)
