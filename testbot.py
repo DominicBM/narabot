@@ -557,7 +557,7 @@ class File(object):
                 "<gallery>\nFile:{0}|.tif\nFile:{1}|.jpg\n</gallery>".format(
                     self.item[0].wiki_filename,
                     self.item[0].wiki_filename[:-4] + ".jpg")
-        if self.all_pages:
+        if len(self.all_pages) > 1:
             pagelinks = ""
             for (pagenumber, filename) in self.all_pages:
                 if filename.endswith(".tif"):
