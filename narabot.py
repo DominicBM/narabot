@@ -1,12 +1,12 @@
-#!/usr/bin/python2
+#! /usr/bin/env python 
 
 ###############################################################################
-#
-#               NARABOT.PY (a batch uploader for Wikipedia)
-#               Original Code by Fran Rogers
-#               Revised and extended by Joshua Westgard
-#               Version 2.0 - 2014-02-28
-#
+#                                                                             #
+#               NARABOT.PY (a batch uploader for Wikipedia)                   # 
+#                      Original Code by Fran Rogers                           #
+#                 Revised and extended by Joshua Westgard                     #
+#                        Version 2.0 - 2014-04-17                             #
+#                                                                             #
 ###############################################################################
 #
 #  begin imports
@@ -18,7 +18,7 @@ import cgi
 import cookielib
 from datetime import date
 import hashlib
-import image
+from PIL import Image
 import itertools
 import json
 import mimetools
@@ -35,7 +35,7 @@ import urllib2
 #
 #  end imports
 ###############################################################################
-#  begin variable definitions
+#  begin variable declarations
 #
 
 Author = namedtuple('Author', ['id', 'name'])
@@ -46,14 +46,13 @@ RecordGroup = namedtuple('RecordGroup', ['id', 'name'])
 Series = namedtuple('Series', ['id', 'name'])
 
 #
-#  end of variable definitions
+#  end of variable declarations
 ###############################################################################
 #  begin class-independent function definitions
 #
 
 def wikitext_escape(s):
     return re.sub(r'([#<>\[\]\|\{\}|]+)', r'<nowiki>\1</nowiki>', s)
-
 
 def soup_to_plaintext(element):
     out = ""
@@ -74,57 +73,91 @@ def soup_to_plaintext(element):
 #  begin the UPLOAD BATCH class definition
 #
 
-class UploadBatch(set):
+class Batch(set):
     def __init__(self, index_filename, *directories):
         f = open(index_filename)
-        filename_arcids = {}
-        lineno = 1
+        
+        # create dictionary to hold filename/arcid from filelist as key-value pairs
+        print("\nUpload Manifest:")
+        upload_manifest = {}
+        lineno = 1  # track line number in filelist for error reporting
+        
+        # iterate through the filenames file pulling out filenames and arcids
         for line in f:
             m = re.match('^(.+)\s+([0-9]+)\r?$', line)
             if m:
                 filename, arcid = m.groups()
-                filename_arcids[filename.lower()] = int(arcid)
+                upload_manifest[filename.lower()] = int(arcid)
             else:
                 raise IOError("bad mapping on line {0}: {1}"
                               .format(lineno, line))
+            # Report the files and arcids captured from each line
+            print("LINE {0}: FILE: {1}\tARC ID: {2}".format(lineno, filename, arcid))
             lineno += 1
         
+        # create dictionary to hold filenames from upload directory
         item_filenames = {}
+        
+        # create list for tracking extra files not in the filelist
         self.unknown_filenames = []
-        for directory in directories:
-            for filename in os.listdir(directory):
-                filename = directory + os.path.sep + filename
-                basename = os.path.basename(filename.lower())
-                if basename in filename_arcids:
-                    arcid = filename_arcids[basename]
+        
+        # iterate through the specified directories
+        for d in directories:
+            print("\nSearching directory \"{0}\" for files to upload ...".format(d))
+            # for each file found therein
+            for f in os.listdir(d):
+                # construct the full-path filename and basename,
+                # joining relative directory and filename to the abspath
+                fullpath = os.path.abspath(os.path.join(d, f))
+                print("Full path = {0}".format(fullpath))
+                basename = os.path.basename(os.path.join(d, f.lower()))
+                print("Basename = {0}".format(basename))
+                
+                # look in the filename_arcids dictionary for the basename
+                # and lookup the arcid for that file
+                if basename in upload_manifest:
+                    arcid = upload_manifest[basename]
+                    
+                    # if arcid is already found in item_filenames dictionary,
+                    # attach it to that item, otherwise add it as its own item
                     if arcid in item_filenames:
-                        item_filenames[arcid] += filename
+                        item_filenames[arcid].append(fullpath)
                         item_filenames[arcid].sort()
                     else:
-                        item_filenames[arcid] = [filename]
+                        item_filenames[arcid] = [fullpath]
+                
+                # add any files not found in filelist to the unknowns list
                 else:
-                    self.unknown_filenames.append(filename)
+                    self.unknown_filenames.append(fullpath)
 
+        print("\nCreated the following upload batch:")
+        for a, f in item_filenames.items():
+            print("\n{0}:".format(a))
+            print("\n".join(f for f in item_filenames[a]))
+
+        # for each set of items (arcid: files) in the item_filenames dictionary
+        # iterate through the list of files, creating a file object for each and
+        # appending it to a list of files, which in turn is attached to an item
         for arcid, filenames in item_filenames.items():
-            files = []
-            for filename in filenames:
-                files.append(File.from_extension(self, filename))
+            files = [File.from_extension(self, f) for f in filenames]
             self.add(Item(arcid, *files))
 
 #
-#  end of UPLOAD BATCH class definition
+#  end of BATCH class definition
 ###############################################################################
 #  beginning of the ITEM class definition
 #
 
 class Item(object):
     def __init__(self, arcid, *files):
+        print("\nGenerating item for arcid #{0}".format(arcid))
         self.arcid = arcid
         self.files = files
         for n in range(len(self.files)):
             files[n].item = self
             files[n].index = n
-
+        for i in self.pagination:
+            print("Page {0}: {1}".format(i[0], i[1]))
         jar = cookielib.CookieJar()
         self.__opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(jar))
 
@@ -136,14 +169,15 @@ class Item(object):
 
     @property
     def __item_url(self):
-        return 'http://arcweb.archives.gov/arc/action/ExternalIdSearch?id=' + \
+        url = 'http://arcweb.archives.gov/arc/action/ExternalIdSearch?id=' + \
                str(self.arcid)
-
+        return(url)
+        
     @property
     def __item_page(self):
         if not hasattr(self, '__item_page_cached'):
             self.__item_page_cached = \
-                BeautifulSoup(self.__opener.open(self.__item_url).read())
+                BeautifulSoup(self.__opener.open(self.__item_url).read())    
         return self.__item_page_cached
 
     @property
@@ -160,6 +194,15 @@ class Item(object):
             else:
                 self.__hierarchy_page_cached = None
         return self.__hierarchy_page_cached
+    
+    @property
+    def pagination(self):
+        if not hasattr(self, '__pagination'):
+            try:
+                self.__pagination = [(i+1, j) for i, j in enumerate(self.files)]
+            except:
+                self.__pagination = None
+        return self.__pagination
 
     @property
     def authors(self):
@@ -173,7 +216,6 @@ class Item(object):
                     self.__authors.append(Author(int(m.group(1)), a.text))
             except:
                 self.__authors = None
-
         return self.__authors
 
     @property
@@ -191,7 +233,6 @@ class Item(object):
                         self.__contacts.append(contact)
             except:
                 self.__contacts = None
-
         return self.__contacts        
 
     @property
@@ -208,7 +249,6 @@ class Item(object):
                         self.__creators.append(creator)
             except:
                 self.__creators = None
-
         return self.__creators
 
     @property
@@ -218,12 +258,9 @@ class Item(object):
                          self.__item_page.find(text='Coverage Dates:') or \
                          self.__item_page.find(text='Broadcast Date(s):') or \
                          None
-
             if date_field:
                 date_str = date_field.parent.parent.next_sibling.text.strip()
-
                 date_str = wikitext_escape(date_str)
-
                 date_str = re.sub(r'(?<![{=|])\b(\d+)/(\d+)/(\d+)',
                                   r"{{date|\3|\1|\2}}",
                                   date_str)
@@ -233,11 +270,9 @@ class Item(object):
                 date_str = re.sub(r'(?<![{=|])\b(\d+)',
                                   r"{{date|\1}}",
                                   date_str)
-                
                 self.__dates = date_str
             else:
                 self.__dates = None
-
         return self.__dates
 
     @property
@@ -249,14 +284,11 @@ class Item(object):
         if not hasattr(self, '__file_unit'):
             try:
                 treel3 = self.__hierarchy_page.find('span', 'treel3')
-
                 name = treel3.find('span', 'hierRecord').text
                 id = treel3.find('span', 'hierlocalid').strong.text
-                
                 self.__file_unit = FileUnit(id, name)
             except:
                 self.__file_unit = None
-        
         return self.__file_unit
 
     @property
@@ -268,7 +300,6 @@ class Item(object):
                     .parent.next_sibling.text.strip()
             except:
                 self.__general_notes = None
-
         return self.__general_notes
 
     @property
@@ -281,7 +312,6 @@ class Item(object):
                 self.__local_identifier = m.group(2)
             except:
                 self.__local_identifier = None
-            
         return self.__local_identifier
 
     @property
@@ -298,7 +328,6 @@ class Item(object):
                     name = a.text
                     latitude = None
                     longitude = None
-
                     try:
                         place_url = ('http://arcweb.archives.gov/arc/action/'
                                      + a['href'])
@@ -316,11 +345,9 @@ class Item(object):
                         longitude = m.group(2)
                     except:
                         pass
-                    
                     self.__places.append(Place(id, name, latitude, longitude))
             except:
                 self.__places = None
-
         return self.__places
 
     @property
@@ -331,11 +358,9 @@ class Item(object):
                 name = treel1.span.strong.text.strip() + " " + \
                        treel1.find('span', 'hierRecord').text.strip()
                 id = int(treel1.find('span', 'hierlocalid').strong.text)
-                
                 self.__record_group = RecordGroup(id, name)
             except:
                 self.__record_group = None
-        
         return self.__record_group
 
     @property
@@ -352,7 +377,6 @@ class Item(object):
                 self.__scope_and_content = soup.text.strip()
             else:
                 self.__scope_and_content = None
-        
         return self.__scope_and_content
 
     @property
@@ -362,11 +386,9 @@ class Item(object):
                 treel2 = self.__hierarchy_page.find('span', 'treel2')
                 name = treel2.find('span', 'hierRecord').text.strip()
                 id = int(treel2.find('span', 'hierlocalid').strong.text)
-                
                 self.__series = Series(id, name)
             except:
                 self.__series = None
-        
         return self.__series
 
     @property
@@ -384,7 +406,6 @@ class Item(object):
                         self.__variant_control_numbers.append(vcn)
             except:
                 self.__variant_control_numbers = None
-
         return self.__variant_control_numbers
 
 #
@@ -416,6 +437,10 @@ class File(object):
         raise NotImplementedError
 
     @property
+    def all_pages(self):
+        return [(p+1, f.wiki_filename) for p, f in enumerate(self.item.files)]
+
+    @property
     def size(self):
         return os.path.getsize(self.filename)
 
@@ -429,11 +454,9 @@ class File(object):
         if image.mode != 'RGB':
             image = image.convert('RGB')
         image.save(new_filename, 'JPEG', quality=100)
-        
         new_file = JPEGFile(new_filename)
         new_file.item = self.item
         new_file.index = self.index
-        
         return new_file
 
     @property
@@ -442,20 +465,18 @@ class File(object):
             suffix = " - NARA - {0}{1}".format(self.item.arcid,
                                                self.canonical_extension)
         else:
-            suffix = ", page {0} - NARA - {1}{2}" \
+            suffix = ", p. {0} of {1} - NARA - {2}{3}" \
                      .format(self.index + 1,
+                             len(self.item.files),
                              self.item.arcid,
                              self.canonical_extension)
-
         title = self.item.description
         while len(title + suffix) > 120:
             title = re.sub('\s+\S+$', '', title)
         if title == "":
             title = self.item.description[:120 - len(suffix)]
-
         title = re.sub(r'#|<|>|\[|\]|\||\{|\}|:|/', '-', title)
         title = re.sub('\s+', ' ', title)
-
         return title + suffix
 
     @property
@@ -485,8 +506,9 @@ class File(object):
         text += u"|Variant control numbers={variant_control_numbers}\n"
         text += u"|TIFF={tiff}\n"
         text += u"|Other versions={other_versions}\n"
+        text += u"|Other pages={other_pages}\n"
         text += u"}}}}\n\n"
-        text += u"== {{{{int:license}}}} ==\n"
+        text += u"== {{{{int:license-header}}}} ==\n"
         text += u"{{{{NARA-cooperation}}}}\n"
         text += u"{{{{PD-USGov}}}}\n\n"
         text += u"{{{{Uncategorized-NARA|year={{{{subst:CURRENTYEAR}}}}|month={{{{subst:CURRENTMONTHNAME}}}}|day={{{{subst:CURRENTDAY}}}}}}}}"
@@ -500,13 +522,11 @@ class File(object):
         m['arc'] = self.item.arcid
         m['local_identifier'] = escape(self.item.local_id or "")
         m['creator'] = "<br/>\n".join(map(escape, self.item.creators or []))
-        
         authors = []
         for author in self.item.authors or []:
             authors.append("{{{{NARA-Author|{0}|{1}}}}}"
                            .format(escape(author.name), author.id))
         m['author'] = "<br/>\n".join(authors)
-
         places = []
         for place in self.item.places or []:
             if place.latitude and place.longitude:
@@ -520,11 +540,8 @@ class File(object):
                               .format(escape(place.name),
                                       place.id))
         m['place'] = "<br/>\n".join(places)
-
         m['location'] = "<br/>\n".join(map(escape, self.item.contacts or ""))
-
         m['date'] = self.item.dates or ""
-        
         m['record_group_arc'], m['record_group'] = \
             self.item.record_group or ("", "")
         m['series_arc'], m['series'] = \
@@ -534,14 +551,28 @@ class File(object):
         m['variant_control_numbers'] = \
             "\n*".join(map(escape, self.item.variant_control_numbers or []))
         m['tiff'] = "yes" if isinstance(self, TIFFFile) else ""
-
         m['other_versions'] = ""
         if isinstance(self.item[0], TIFFFile):
             m['other_versions'] = \
-                "<gallery>\nFile:{0}|.tif\nFile:{1}|.jpg\n</gallery>".format(
+                "<gallery>\nFile:{0}|This page as TIFF\nFile:{1}|This page as JPG\n</gallery>".format(
                     self.item[0].wiki_filename,
                     self.item[0].wiki_filename[:-4] + ".jpg")
-        
+        if len(self.all_pages) > 1:
+            tiflinks = ""
+            jpglinks = ""
+            for (pagenumber, filename) in self.all_pages:
+                if filename.endswith(".tif"):
+                    tiflinks += 'File:{0}|page&#32;{1} (TIFF)\n'.format(
+                        filename, pagenumber)
+                    jpglinks += 'File:{0}|page {1} (JPG)\n'.format(
+                        (filename[:-4] + ".jpg"), pagenumber)
+                else:
+                    jpglinks += 'File:{0}|page {1} (JPG)\n'.format(
+                        filename, pagenumber)
+            m['other_pages'] = "<gallery>\n{0}</gallery>\n<gallery>\n{1}</gallery>".format(
+                tiflinks, jpglinks)
+        else:
+            m['other_pages'] = ""
         return text.format(**m)
 
 #
@@ -609,8 +640,9 @@ class UploadBot(object):
         self.opener = \
             urllib2.build_opener(urllib2.HTTPCookieProcessor(self.jar))
         self.opener.addheaders = [('User-Agent', "narabot.py")]
-
-        print("logging in as [[User:{0}]]... ".format(username),
+        
+        print("Creating a test bot ...\n")
+        print("Logging in as [[User:{0}]] ... ".format(username),
               end='',
               file=sys.stderr)
         sys.stderr.flush()
@@ -623,7 +655,7 @@ class UploadBot(object):
                                      lgpassword=password,
                                      lgtoken=reply['token'])
         assert reply['result'] == 'Success'
-        print("success!", file=sys.stderr)
+        print("success!\n", file=sys.stderr)
         
         self.index_filename = index_filename
         self.max_size = max_size
@@ -639,6 +671,7 @@ class UploadBot(object):
                 open(state_filename, 'w').close()
         self.state_filename = state_filename
 
+
     def api_request(self, **post_data):
         for key, value in post_data.items():
             if key.endswith('_'):
@@ -651,19 +684,24 @@ class UploadBot(object):
         if not post_data['action'] in response_decoded:
             raise Exception(response_decoded['error']['info'])
         return response_decoded[post_data['action']]
+
     
     def upload_directory(self, *directories):
-        self.upload_batch(UploadBatch(self.index_filename, *directories))
+        print("Preparing the upload batch ... ")
+        self.upload_batch(Batch(self.index_filename, *directories))
+
 
     def upload_batch(self, batch):
         if self.unknowns_filename:
             open(self.unknowns_filename, 'a').write(
                 "\n".join(batch.unknown_filenames))
+        print("\nSkipping Extra Files")
         for filename in batch.unknown_filenames:
             print("skipping unknown file '{0}'".format(filename),
                   file=sys.stderr)
         for item in batch:
             self.upload_item(item)
+
 
     def upload_item(self, item):
         for file in item.files:
@@ -678,6 +716,7 @@ class UploadBot(object):
                     f = open(self.state_filename, 'a')
                     print(file.filename, file=f)
                     f.close()
+
 
     def upload_file(self, file):
         wiki_filename = file.wiki_filename
@@ -707,6 +746,7 @@ class UploadBot(object):
                     print("file '{0}' exceeds maximum size; skipping",
                           file=sys.stderr)
             else:
+                print("\nAssembling metadata:\n{0}\n".format(file.wikitext))
                 print("uploading '{0}' as [[File:{1}]]... "
                       .format(file.filename, wiki_filename),
                       end='',
@@ -758,6 +798,7 @@ class UploadBot(object):
                   file=sys.stderr)
             os.remove(jpeg.filename)
     
+    
     def get_duplicate_name(self, file):
         sha1 = hashlib.sha1()
         f = open(file.filename, 'rb')
@@ -774,6 +815,7 @@ class UploadBot(object):
             return duplicate_name
         else:
             return None
+
 
     def move_existing_file(self, old_wiki_filename, new_wiki_filename):
         print("moving [[File:{0}]] to [[File:{1}]]... "
@@ -803,6 +845,7 @@ class UploadBot(object):
             print("success!", file=sys.stderr)
         else:
             print("failed.", file=sys.stderr)
+
 
     def upload_big_file(self, file):
         new_filename = self.overflow_dir + os.path.sep + file.os_filename
@@ -895,6 +938,15 @@ class MultiPartForm(object):
 #
 
 if __name__ == '__main__':
+    
+    print("\n\n\n")
+    print("*********************************************************")
+    print("*                      NARABOT                          *")
+    print("*  A Batch Loader for NARA images in WikiMedia Commons  *")
+    print("*                 -- Version 2.0 --                     *")    
+    print("*********************************************************")
+    print("\nWelcome!  Preparing the batch for uploading...\n")
+    
     import argparse
     parser = argparse.ArgumentParser(
         description="MediaWiki file uploader for NARA")
