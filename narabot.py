@@ -569,7 +569,7 @@ class File(object):
                 else:
                     jpglinks += 'File:{0}|page {1} (JPG)\n'.format(
                         filename, pagenumber)
-            m['other_pages'] = "<gallery>\n{0}</gallery>\n<gallery>\n{1}</gallery>".format(
+            m['other_pages'] = "<gallery>\n{0}</gallery>\n<br/>\n----\n<br/>\n<gallery>\n{1}</gallery>".format(
                 tiflinks, jpglinks)
         else:
             m['other_pages'] = ""
