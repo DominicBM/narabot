@@ -552,11 +552,11 @@ class File(object):
             "\n*".join(map(escape, self.item.variant_control_numbers or []))
         m['tiff'] = "yes" if isinstance(self, TIFFFile) else ""
         m['other_versions'] = ""
-        if isinstance(self.item[0], TIFFFile):
+        if isinstance(self, TIFFFile):
             m['other_versions'] = \
                 "<gallery>\nFile:{0}|This page as TIFF\nFile:{1}|This page as JPG\n</gallery>".format(
-                    self.item[0].wiki_filename,
-                    self.item[0].wiki_filename[:-4] + ".jpg")
+                    self.wiki_filename,
+                    self.wiki_filename[:-4] + ".jpg")
         if len(self.all_pages) > 1:
             tiflinks = ""
             jpglinks = ""
