@@ -265,7 +265,7 @@ class Item(object):
                                   r"\3-\1-\2",
                                   date_str)
                 date_str = re.sub(r'(?<![{=|])\b(\d+)/(\d+)',
-                                  r"\2\1",
+                                  r"\2-\1",
                                   date_str)
                 date_str = re.sub(r'(?<![{=|])\b(\d+)',
                                   r"\1",
