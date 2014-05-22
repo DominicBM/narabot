@@ -262,13 +262,13 @@ class Item(object):
                 date_str = date_field.parent.parent.next_sibling.text.strip()
                 date_str = wikitext_escape(date_str)
                 date_str = re.sub(r'(?<![{=|])\b(\d+)/(\d+)/(\d+)',
-                                  r"{{date|\3|\1|\2}}",
+                                  r"\3-\1-\2",
                                   date_str)
                 date_str = re.sub(r'(?<![{=|])\b(\d+)/(\d+)',
-                                  r"{{date|\2|\1}}",
+                                  r"\2\1",
                                   date_str)
                 date_str = re.sub(r'(?<![{=|])\b(\d+)',
-                                  r"{{date|\1}}",
+                                  r"\1",
                                   date_str)
                 self.__dates = date_str
             else:
